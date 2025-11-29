@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# Display information about DNS records for specific subdomains
+
+domain="$1"
+subdomain="$2"
+
+# Function to query a subdomain and print its type & destination
+lookup_subdomain() {
+    local dom="$1"
+    local sub="$2"
+    local fqdn="${sub}.${dom}"
+
+    # Using dig and awk to extract record type and destination IP
+    local line
+    line=$(dig "$fqdn" | awk -v host="${fqdn}." '$1 == host {print $4, $5; exit}')
+
+    local record_type dest
+    record_type=$(echo "$line" | awk '{print $1}')
+    dest=$(echo "$line" | awk '{print $2}')
+
+    echo "The subdomain $sub is a $record_type record and points to $dest"
+}
+
+if [ -n "$subdomain" ]; then
+    # Domain + specific subdomain given
+    lookup_subdomain "$domain" "$subdomain"
+else
+    # Only domain given -> check www, lb-01, web-01, web-02 in this order
+    lookup_subdomain "$domain" "www"
+    lookup_subdomain "$domain" "lb-01"
+    lookup_subdomain "$domain" "web-01"
+    lookup_subdomain "$domain" "web-02"
+fi
