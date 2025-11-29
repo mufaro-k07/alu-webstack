@@ -1,0 +1,29 @@
+global
+    log /dev/log local0
+    log /dev/log local1 notice
+    daemon
+    maxconn 256
+    tune.ssl.default-dh-param 2048
+
+defaults
+    log     global
+    mode    http
+    option  httplog
+    option  dontlognull
+    timeout connect 5000
+    timeout client  50000
+    timeout server  50000
+
+frontend http-in
+    bind *:80
+    # Redirect all HTTP traffic to HTTPS with 301
+    http-request redirect scheme https code 301 if !{ ssl_fc }
+
+frontend https-in
+    bind *:443 ssl crt /etc/haproxy/certs/www.mufarov.tech.pem
+    default_backend web-backend
+
+backend web-backend
+    balance roundrobin
+    server web-01 3.83.235.200:80 check
+    server web-02 18.212.194.125:80 check
